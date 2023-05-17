@@ -5,61 +5,18 @@ import { TextField } from "../atoms/text_field";
 import { TodoList } from "./todo_list";
 import axios from "axios";
 import io from "socket.io-client";
+import { useQuery, useMutation } from "@apollo/client";
+import { CREATE_TODO } from "../graphql/mutation";
+import { GET_ALL_TODOS } from "@/graphql/query";
 
 let socket;
 
 export const Form = ({ todoList }) => {
   const [formData, setFormData] = useState({ name: "", todo: "" });
   const [todos, setTodos] = useState(todoList);
-  // const socket = io("http://localhost:4000");
 
-  useEffect(() => {
-    (async () => {
-      // socket = io(`http://${process.env.NEXT_PUBLIC_API_URL}`);
-
-      // socket.on("connect", () => {
-      //   // setIsConnected(true)
-      //   console.log("connected");
-      // });
-
-      // socket.on("disconnect", () => {
-      //   // setIsConnected(false)
-      //   console.log("disconnected");
-      // });
-
-      // socket.on("newTodo", (data) => {
-      //   console.log("New todo received:", data);
-      //   setTodos((prevTodos) => [...prevTodos, data]);
-      // });
-
-      socket = new WebSocket(`ws://${process.env.NEXT_PUBLIC_API_URL}`);
-
-      socket.onopen = () => {
-        console.log("connected");
-      };
-
-      socket.onclose = () => {
-        console.log("disconnected");
-      };
-
-      socket.onmessage = (event) => {
-        console.log(event);
-
-        // const reader = new FileReader();
-
-        // reader.onload = function () {
-        //   console.log("reader", reader.result);
-        //   console.log("New todo received:", reader.result);
-        //   setTodos((prevTodos) => [...prevTodos, reader.result]);
-        // };
-
-        // reader.readAsText(event.data);
-
-        console.log("New todo received:", event.data, typeof event.data);
-        setTodos((prevTodos) => [...prevTodos, JSON.parse(event.data)]);
-      };
-    })();
-  }, []);
+  // const { loading, error, data } = useQuery(GET_ALL_TODOS);
+  const [createTodo, { err }] = useMutation(CREATE_TODO);
 
   const handleInputChange = (event) => {
     const { name, value } = event.target;
@@ -70,18 +27,19 @@ export const Form = ({ todoList }) => {
     event.preventDefault();
     console.log(`form data is: ${formData.name} and ${formData.todo}`);
     try {
-      const response = await axios.post(
-        `${process.env.NEXT_PUBLIC_API_URL}/todo/add-todo`,
-        formData
-      );
+      const response = createTodo({
+        variables: formData,
+      });
 
       console.log("Todo added successfully");
+      // console.log(`response is ${response.data}`);
 
-      // const todosResponse = await axios.get(
-      //   "http://192.168.0.203:4000/todo/list-todos"
-      // );
-      // console.log(`todos list are: ${todosResponse}`);
-      // setTodos(todosResponse.data);
+      // const todosResponse = await data.getAllTodos;
+
+      const newTodo = (await response).data.createTodo; // Get the newly created todo from the response
+      console.log("new todo is:", newTodo);
+
+      setTodos((prevTodos) => [...prevTodos, newTodo]);
       setFormData({ name: "", todo: "" });
     } catch (error) {
       console.error(error);

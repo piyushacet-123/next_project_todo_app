@@ -1,42 +1,13 @@
-import Image from "next/image";
 import { Form } from "../orgs/form";
 import { Header } from "../orgs/header";
-import Link from "next/link";
-import { TodoList } from "../orgs/todo_list";
 import axios from "axios";
 import Head from "next/head";
-import { useEffect, useState } from "react";
-import io from "socket.io-client";
+import { useQuery, useMutation } from "@apollo/client";
+import { GET_ALL_TODOS } from "../graphql/query";
 
 let socket;
 
 const Page = ({ todos }) => {
-  // const [isConnected, setIsConnected] = useState(false);
-
-  // useEffect(() => {
-  //   async function socketInitializer() {
-
-  //     socket = io('http://localhost:4000');
-
-  //     socket.on('connect', () => {
-  //       setIsConnected(true)
-  //       console.log('connected');
-  //     });
-
-  //     socket.on('disconnect', () => {
-  //       setIsConnected(false)
-  //       console.log('disconnected');
-  //     });
-  //     // await fetch("/api/socket");
-  //     // socket = io();
-
-  //     // socket.on("connect", () => {
-  //     //   console.log("connected");
-  //     // });
-  //   }
-  //   socketInitializer();
-  // }, []);
-
   return (
     <div>
       <Head>
@@ -45,9 +16,7 @@ const Page = ({ todos }) => {
       </Head>
       <div>
         <Header />
-        {/* <p>socket is connected : {JSON.stringify(isConnected)}</p> */}
         <Form todoList={todos} />
-        {/* <TodoList /> */}
       </div>
     </div>
   );
@@ -55,10 +24,29 @@ const Page = ({ todos }) => {
 
 export default Page;
 
-export async function getServerSideProps() {
-  const { data } = await axios.get(
-    `${process.env.NEXT_PUBLIC_API_URL}/todo/list-todos`
-  );
+export async function getServerSideProps(context) {
+  const { ApolloClient, InMemoryCache, gql } = require("@apollo/client");
+  const client = new ApolloClient({
+    uri: "http://localhost:5000/graphql",
+    cache: new InMemoryCache(),
+  });
 
-  return { props: { todos: data } };
+  try {
+    const { data } = await client.query({ query: GET_ALL_TODOS });
+    console.log(`data is: ${data.getAllTodos}`)
+    const todos = data.getAllTodos || []; // Set todos to an empty array if it is undefined
+
+    return { props: { todos } };
+  } catch (error) {
+    console.error("Error fetching todos", error);
+    return { props: { todos: [] } }; // Return an empty array as a fallback
+  }
 }
+
+// export async function getServerSideProps() {
+//   const { data } = await axios.get(
+//     `${process.env.NEXT_PUBLIC_API_URL}/todo/list-todos`
+//   );
+
+//   return { props: { todos: data } };
+// }
